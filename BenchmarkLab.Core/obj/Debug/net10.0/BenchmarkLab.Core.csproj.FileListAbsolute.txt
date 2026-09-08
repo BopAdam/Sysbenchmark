@@ -10,3 +10,15 @@
 /home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/obj/Debug/net10.0/refint/BenchmarkLab.Core.dll
 /home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/obj/Debug/net10.0/BenchmarkLab.Core.pdb
 /home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/obj/Debug/net10.0/ref/BenchmarkLab.Core.dll
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\bin\Debug\net10.0\BenchmarkLab.Core.deps.json
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\bin\Debug\net10.0\BenchmarkLab.Core.dll
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\bin\Debug\net10.0\BenchmarkLab.Core.pdb
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.AssemblyInfoInputs.cache
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.AssemblyInfo.cs
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.sourcelink.json
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.dll
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\refint\BenchmarkLab.Core.dll
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\BenchmarkLab.Core.pdb
+C:\Users\User\Desktop\A Nagy Programozos Mappa\C#\Benchmark_App\Sysbenchmark\BenchmarkLab.Core\obj\Debug\net10.0\ref\BenchmarkLab.Core.dll

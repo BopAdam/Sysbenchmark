@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net10.0": {
       "coverlet.collector/6.0.4": {
@@ -930,33 +930,41 @@
     ]
   },
   "packageFolders": {
-    "/home/amehes/.nuget/packages/": {}
+    "C:\\Users\\User\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Tests/BenchmarkLab.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\User\\Desktop\\A Nagy Programozos Mappa\\C#\\Benchmark_App\\Sysbenchmark\\BenchmarkLab.Tests\\BenchmarkLab.Tests.csproj",
       "projectName": "BenchmarkLab.Tests",
-      "projectPath": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Tests/BenchmarkLab.Tests.csproj",
-      "packagesPath": "/home/amehes/.nuget/packages/",
-      "outputPath": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Tests/obj/",
+      "projectPath": "C:\\Users\\User\\Desktop\\A Nagy Programozos Mappa\\C#\\Benchmark_App\\Sysbenchmark\\BenchmarkLab.Tests\\BenchmarkLab.Tests.csproj",
+      "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\User\\Desktop\\A Nagy Programozos Mappa\\C#\\Benchmark_App\\Sysbenchmark\\BenchmarkLab.Tests\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/home/amehes/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
-        "/usr/lib/dotnet/library-packs": {},
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net10.0": {
+          "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/BenchmarkLab.Core.csproj": {
-              "projectPath": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/BenchmarkLab.Core.csproj"
+            "C:\\Users\\User\\Desktop\\A Nagy Programozos Mappa\\C#\\Benchmark_App\\Sysbenchmark\\BenchmarkLab.Core\\BenchmarkLab.Core.csproj": {
+              "projectPath": "C:\\Users\\User\\Desktop\\A Nagy Programozos Mappa\\C#\\Benchmark_App\\Sysbenchmark\\BenchmarkLab.Core\\BenchmarkLab.Core.csproj"
             }
           }
         }
@@ -971,10 +979,11 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
       "net10.0": {
+        "framework": "net10.0",
         "targetAlias": "net10.0",
         "dependencies": {
           "Microsoft.NET.Test.Sdk": {
@@ -1010,7 +1019,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/10.0.111/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",
