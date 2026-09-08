@@ -2,4 +2,5 @@
   <Project Path="BenchmarkLab.App/BenchmarkLab.App.csproj" />
   <Project Path="BenchmarkLab.Core/BenchmarkLab.Core.csproj" />
   <Project Path="BenchmarkLab.Hardware/BenchmarkLab.Hardware.csproj" />
+  <Project Path="BenchmarkLab.Tests/BenchmarkLab.Tests.csproj" />
 </Solution>

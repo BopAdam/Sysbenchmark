@@ -1,11 +1,46 @@
 {
   "version": 3,
   "targets": {
-    "net10.0": {}
+    "net10.0": {
+      "BenchmarkLab.Core/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/BenchmarkLab.Core.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BenchmarkLab.Core.dll": {}
+        }
+      },
+      "BenchmarkLab.Hardware/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/BenchmarkLab.Hardware.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/BenchmarkLab.Hardware.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "BenchmarkLab.Core/1.0.0": {
+      "type": "project",
+      "path": "../BenchmarkLab.Core/BenchmarkLab.Core.csproj",
+      "msbuildProject": "../BenchmarkLab.Core/BenchmarkLab.Core.csproj"
+    },
+    "BenchmarkLab.Hardware/1.0.0": {
+      "type": "project",
+      "path": "../BenchmarkLab.Hardware/BenchmarkLab.Hardware.csproj",
+      "msbuildProject": "../BenchmarkLab.Hardware/BenchmarkLab.Hardware.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net10.0": []
+    "net10.0": [
+      "BenchmarkLab.Core >= 1.0.0",
+      "BenchmarkLab.Hardware >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "/home/amehes/.nuget/packages/": {}
@@ -32,7 +67,14 @@
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/BenchmarkLab.Core.csproj": {
+              "projectPath": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Core/BenchmarkLab.Core.csproj"
+            },
+            "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Hardware/BenchmarkLab.Hardware.csproj": {
+              "projectPath": "/home/amehes/Asztal/C#_prog/BencmarkApp/BenchmarkLab.Hardware/BenchmarkLab.Hardware.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
