@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BenchmarkLab.App")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9410b57f6a64597fdd27cdfe3639ea086ab36476")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+959bd76c7b3be7c61d2e3b9b7989941456a7db55")]
 [assembly: System.Reflection.AssemblyProductAttribute("BenchmarkLab.App")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BenchmarkLab.App")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
