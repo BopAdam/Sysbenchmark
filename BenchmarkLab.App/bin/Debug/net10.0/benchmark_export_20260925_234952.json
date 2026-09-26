@@ -1,0 +1,44 @@
+[
+  {
+    "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+    "ElapsedMilliseconds": 764.3758,
+    "OperationsPerSecond": 3767780193.9831166,
+    "ThroughputGbPerSec": 0,
+    "Score": 3767
+  },
+  {
+    "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+    "ElapsedMilliseconds": 454.9707,
+    "OperationsPerSecond": 6330077958.866362,
+    "ThroughputGbPerSec": 0,
+    "Score": 6330
+  },
+  {
+    "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+    "ElapsedMilliseconds": 443.8815,
+    "OperationsPerSecond": 6488218139.300692,
+    "ThroughputGbPerSec": 0,
+    "Score": 6488
+  },
+  {
+    "TestName": "Mem\u00F3ria Szekvenci\u00E1lis Olvas\u00E1s (256 MB)",
+    "ElapsedMilliseconds": 368.3911,
+    "OperationsPerSecond": 910837205.3505092,
+    "ThroughputGbPerSec": 6.786266009140828,
+    "Score": 678
+  },
+  {
+    "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+    "ElapsedMilliseconds": 449.5501,
+    "OperationsPerSecond": 6406404981.335784,
+    "ThroughputGbPerSec": 0,
+    "Score": 6406
+  },
+  {
+    "TestName": "Mem\u00F3ria Szekvenci\u00E1lis Olvas\u00E1s (256 MB)",
+    "ElapsedMilliseconds": 367.5244,
+    "OperationsPerSecond": 912985151.4620527,
+    "ThroughputGbPerSec": 6.802269454762732,
+    "Score": 680
+  }
+]

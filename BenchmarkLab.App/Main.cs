@@ -60,10 +60,21 @@ static void RunCpuTest(List<BenchmarkResult> results)
     Console.WriteLine("\n[FUTTATÁS] CPU terhelés indítása...");
     Console.ResetColor();
 
-    var res = CpuBenchmark.RunMultiThreadedTest(threadCount: Environment.ProcessorCount, iterationsPerThread: 30_000_000);
-    results.Add(res);
+    double? tempBefore = CpuTemperatureReader.ReadCelsius();
 
+    var res = CpuBenchmark.RunMultiThreadedTest(
+        threadCount: Environment.ProcessorCount,
+        iterationsPerThread: 30_000_000);
+
+    double? tempAfter = CpuTemperatureReader.ReadCelsius();
+
+    results.Add(res);
     DisplayResult(res);
+
+     Console.ForegroundColor = ConsoleColor.Green;
+    Console.WriteLine(
+        $"CPU-hőmérséklet: induláskor {tempBefore?.ToString("F1") ?? "nincs adat"} °C, " +
+        $"a teszt után {tempAfter?.ToString("F1") ?? "nincs adat"} °C");
 }
 
 static void RunMemoryTest(List<BenchmarkResult> results)
@@ -87,7 +98,6 @@ static void DisplayResult(BenchmarkResult res)
         Console.WriteLine($"   Sávszélesség: {res.ThroughputGbPerSec:F2} GB/s");
     else
         Console.WriteLine($"   Művelet/sec : {res.OperationsPerSecond / 1_000_000:F2} MOps/s");
-    Console.WriteLine($"   Pontszám    : {res.Score} pont");
     Console.ResetColor();
 }
 

@@ -30,7 +30,7 @@ public static class MemoryBenchmark
 
         double totalBytesRead = (double)sizeInMb * 1024 * 1024 * passes;
         double throughputGbSec = (totalBytesRead / (1024.0 * 1024.0 * 1024.0)) / elapsed.TotalSeconds;
-        long score = (long)(throughputGbSec * 100);
+
 
         if (checksum == -1) Console.WriteLine(checksum);
 
@@ -38,8 +38,7 @@ public static class MemoryBenchmark
             TestName: $"Memória Szekvenciális Olvasás ({sizeInMb} MB)",
             ElapsedMilliseconds: elapsed.TotalMilliseconds,
             OperationsPerSecond: (double)elementCount * passes / elapsed.TotalSeconds,
-            ThroughputGbPerSec: throughputGbSec,
-            Score: score
+            ThroughputGbPerSec: throughputGbSec
         );
 
 

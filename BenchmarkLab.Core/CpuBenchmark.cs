@@ -31,14 +31,13 @@ public class CpuBenchmark
            TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp, endTimestamp);
            double totalOperations = (double)threadCount * iterationsPerThread * Vector<float>.Count;
            double opsPerSec = totalOperations / elapsed.TotalSeconds;
-           long score =(long)(opsPerSec / 1_000_000); // Pontszám MOps/sec alapon
+
 
            return new BenchmarkResult(
             TestName: $"CPU Multi-Core SIMD ({threadCount} szál)",
             ElapsedMilliseconds: elapsed.TotalMilliseconds,
             OperationsPerSecond: opsPerSec,
-            ThroughputGbPerSec: 0,
-            Score: score
+            ThroughputGbPerSec: 0
             
            );
         }

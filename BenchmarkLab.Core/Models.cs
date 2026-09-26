@@ -4,7 +4,6 @@ public readonly record struct BenchmarkResult(
     string TestName,
     double ElapsedMilliseconds,
     double OperationsPerSecond,
-    double ThroughputGbPerSec,
-    long Score
+    double ThroughputGbPerSec
 );
 
