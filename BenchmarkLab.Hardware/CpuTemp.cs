@@ -1,4 +1,4 @@
-using System.Globalization;
+using LibreHardwareMonitor.Hardware;
 
 namespace BenchmarkLab.Hardware;
 
@@ -6,27 +6,95 @@ public static class CpuTemperatureReader
 {
     public static double? ReadCelsius()
     {
-        foreach (string zone in Directory.GetDirectories(
-                     "/sys/class/thermal", "thermal_zone*"))
+        if (OperatingSystem.IsWindows())
+            return ReadWindows();
+
+        if (OperatingSystem.IsLinux())
+            return ReadLinux();
+
+        return null;
+    }
+
+    private static double? ReadWindows()
+    {
+       var computer = new Computer { IsCpuEnabled = true };
+    computer.Open();
+
+    try
+    {
+        foreach (IHardware hardware in computer.Hardware)
         {
-            string typePath = Path.Combine(zone, "type");
-            string tempPath = Path.Combine(zone, "temp");
-
-            if (!File.Exists(typePath) || !File.Exists(tempPath))
+            if (hardware.HardwareType != HardwareType.Cpu)
                 continue;
 
-            string type = File.ReadAllText(typePath).Trim();
+            hardware.Update();
 
-            // Ezek gyakori CPU-szenzornevek, de gépenként eltérhetnek.
-            if (type != "x86_pkg_temp" && type != "cpu-thermal")
-                continue;
-
-            string raw = File.ReadAllText(tempPath).Trim();
-            if (double.TryParse(raw, NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out double millidegrees))
-                return millidegrees / 1000.0;
+            foreach (ISensor sensor in hardware.Sensors)
+            {
+                if (sensor.SensorType == SensorType.Temperature &&
+                    sensor.Value.HasValue &&
+                    (sensor.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+                     sensor.Name.Contains("Tctl", StringComparison.OrdinalIgnoreCase) ||
+                     sensor.Name.Contains("Tdie", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return sensor.Value.Value;
+                }
+            }
         }
 
-        return null; // Ezen az útvonalon nem találtunk CPU-szenzort.
+        return null;
+    }
+    finally
+    {
+        computer.Close();
+    }
+    }
+
+    private static double? ReadLinux()
+    {
+        const string hwmonRoot = "/sys/class/hwmon";
+
+        if (!Directory.Exists(hwmonRoot))
+            return null;
+
+        foreach (string deviceDirectory in Directory.GetDirectories(hwmonRoot, "hwmon*"))
+        {
+            foreach (string inputFile in Directory.GetFiles(deviceDirectory, "temp*_input"))
+            {
+                string labelFile = inputFile.Replace("_input", "_label");
+
+                if (!File.Exists(labelFile))
+                    continue;
+
+                try
+                {
+                    string label = File.ReadAllText(labelFile).Trim();
+
+                    if (!label.Contains("Package", StringComparison.OrdinalIgnoreCase) &&
+                        !label.Contains("Tctl", StringComparison.OrdinalIgnoreCase) &&
+                        !label.Contains("Tdie", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    if (double.TryParse(
+                            File.ReadAllText(inputFile).Trim(),
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            out double millidegrees))
+                    {
+                        return millidegrees / 1000.0;
+                    }
+                }
+                catch (IOException)
+                {
+                    // A szenzor időközben eltűnhetett; megnézzük a következőt.
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Ehhez a szenzorhoz nincs hozzáférés.
+                }
+            }
+        }
+
+        return null;
     }
 }
