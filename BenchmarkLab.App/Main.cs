@@ -2,6 +2,8 @@
 using BenchmarkLab.Core;
 using BenchmarkLab.Hardware;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using BenchmarkLab.App;
 
 Console.Clear();
 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -17,6 +19,28 @@ Console.WriteLine($"Processzor : {sysInfo.CpuModel}");
 Console.WriteLine($"Logikai szálak: {sysInfo.LogicalCores} db");
 Console.WriteLine($"Rendszermemória: {sysInfo.AvailableMemoryGb:F2} GB szabad / {sysInfo.TotalMemoryGb:F2} GB összesen");
 Console.WriteLine("--------------------------------------------------");
+
+var device = new DeviceInfo(
+    MachineName: Environment.MachineName,
+    OperatingSystem:
+        RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "Windows"
+            : "Linux",
+    CpuModel: sysInfo.CpuModel,
+    TotalMemoryGb: sysInfo.TotalMemoryGb
+);
+string connectionString =
+    Environment.GetEnvironmentVariable("SYSBENCHMARK_DB")
+    ?? throw new InvalidOperationException(
+        "Hiányzik a SYSBENCHMARK_DB környezeti változó.");
+
+var store = new BenchmarkStore(connectionString);
+Console.WriteLine("Adatbázis: MariaDB / sysbenchmark");
+
+Console.WriteLine(
+    $"Gép: {device.MachineName} ({device.OperatingSystem})");
+Console.WriteLine($"Adatbázis: {connectionString}");
+
 
 var results = new List<BenchmarkResult>();
 
@@ -35,26 +59,32 @@ while (true)
 
     switch (key)
     {
-        case "1":
-            RunCpuTest(results);
-            break;
-        case "2":
-            RunMemoryTest(results);
-            break;
-        case "3":
-            RunCpuTest(results);
-            RunMemoryTest(results);
-            break;
-        case "4":
-            ExportResults(results);
-            break;
+       case "1":
+    RunCpuTest(results, store, device);
+    break;
+
+case "2":
+    RunMemoryTest(results, store, device);
+    break;
+
+case "3":
+    RunCpuTest(results, store, device);
+    RunMemoryTest(results, store, device);
+    break;
+
+case "4":
+    ExportResults(results, device);
+    break;
         default:
             Console.WriteLine("Érvénytelen választás!");
             break;
     }
 }
 
-static void RunCpuTest(List<BenchmarkResult> results)
+static void RunCpuTest(
+    List<BenchmarkResult> results,
+    BenchmarkStore store,
+    DeviceInfo device)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine("\n[FUTTATÁS] CPU terhelés indítása...");
@@ -62,58 +92,108 @@ static void RunCpuTest(List<BenchmarkResult> results)
 
     double? tempBefore = CpuTemperatureReader.ReadCelsius();
 
-    var res = CpuBenchmark.RunMultiThreadedTest(
+    var result = CpuBenchmark.RunMultiThreadedTest(
         threadCount: Environment.ProcessorCount,
         iterationsPerThread: 30_000_000);
 
     double? tempAfter = CpuTemperatureReader.ReadCelsius();
 
-    results.Add(res);
-    DisplayResult(res);
+    result = result with
+    {
+        CpuTempBeforeC = tempBefore,
+        CpuTempAfterC = tempAfter
+    };
 
-     Console.ForegroundColor = ConsoleColor.Green;
+    store.Save(device, result);
+    results.Add(result);
+
+    DisplayResult(result);
+
     Console.WriteLine(
-        $"CPU-hőmérséklet: induláskor {tempBefore?.ToString("F1") ?? "nincs adat"} °C, " +
-        $"a teszt után {tempAfter?.ToString("F1") ?? "nincs adat"} °C");
+        $"CPU-hőmérséklet: induláskor " +
+        $"{tempBefore?.ToString("F1") ?? "nincs adat"} °C, " +
+        $"a teszt után " +
+        $"{tempAfter?.ToString("F1") ?? "nincs adat"} °C");
 }
 
-static void RunMemoryTest(List<BenchmarkResult> results)
+static void RunMemoryTest(
+    List<BenchmarkResult> results,
+    BenchmarkStore store,
+    DeviceInfo device)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine("\n[FUTTATÁS] Memória sávszélesség teszt (256 MB buffer)...");
+    Console.WriteLine(
+        "\n[FUTTATÁS] Memória sávszélesség teszt (256 MB buffer)...");
     Console.ResetColor();
 
-    var res = MemoryBenchmark.RunSequentialBandwidthTest(sizeInMb: 256, passes: 10);
-    results.Add(res);
+    var result = MemoryBenchmark.RunSequentialBandwidthTest(
+        sizeInMb: 256,
+        passes: 10);
 
-    DisplayResult(res);
+    store.Save(device, result);
+    results.Add(result);
+
+    DisplayResult(result);
 }
 
-static void DisplayResult(BenchmarkResult res)
+static void DisplayResult(BenchmarkResult result)
 {
     Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine($"-> {res.TestName}");
-    Console.WriteLine($"   Futási idő : {res.ElapsedMilliseconds:F2} ms");
-    if (res.ThroughputGbPerSec > 0)
-        Console.WriteLine($"   Sávszélesség: {res.ThroughputGbPerSec:F2} GB/s");
+
+    Console.WriteLine($"-> {result.TestName}");
+    Console.WriteLine(
+        $"   Időpont UTC: " +
+        $"{result.MeasuredAtUtc:yyyy-MM-dd HH:mm:ss}");
+
+    Console.WriteLine(
+        $"   Futási idő : " +
+        $"{result.ElapsedMilliseconds:F2} ms");
+
+    if (result.ThroughputGbPerSec > 0)
+    {
+        Console.WriteLine(
+            $"   Sávszélesség: " +
+            $"{result.ThroughputGbPerSec:F2} GiB/s");
+    }
     else
-        Console.WriteLine($"   Művelet/sec : {res.OperationsPerSecond / 1_000_000:F2} MOps/s");
+    {
+        Console.WriteLine(
+            $"   Művelet/sec : " +
+            $"{result.OperationsPerSecond / 1_000_000:F2} MOps/s");
+    }
+
     Console.ResetColor();
 }
 
-static void ExportResults(List<BenchmarkResult> results)
+static void ExportResults(
+    List<BenchmarkResult> results,
+    DeviceInfo device)
 {
     if (results.Count == 0)
     {
-        Console.WriteLine("Nincs még elmenthető mérési adat!");
+        Console.WriteLine(
+            "Nincs még elmenthető mérési adat ebben a futásban!");
         return;
     }
 
-    string fileName = $"benchmark_export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-    string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
+    string fileName = "benchmark_export.json";
+
+    var export = new BenchmarkExport(
+        SchemaVersion: 1,
+        ExportedAtUtc: DateTimeOffset.UtcNow,
+        Device: device,
+        Results: results
+    );
+
+    string json = JsonSerializer.Serialize(
+        export,
+        new JsonSerializerOptions { WriteIndented = true });
+
     File.WriteAllText(fileName, json);
 
     Console.ForegroundColor = ConsoleColor.Magenta;
-    Console.WriteLine($"[SIKER] Eredmények elmentve: {fileName}");
+    Console.WriteLine(
+        $"[SIKER] Eredmények elmentve: " +
+        $"{Path.GetFullPath(fileName)}");
     Console.ResetColor();
 }

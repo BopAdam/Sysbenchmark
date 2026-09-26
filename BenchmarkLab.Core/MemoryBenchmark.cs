@@ -35,10 +35,11 @@ public static class MemoryBenchmark
         if (checksum == -1) Console.WriteLine(checksum);
 
         return new BenchmarkResult(
-            TestName: $"Memória Szekvenciális Olvasás ({sizeInMb} MB)",
+            TestName: $"Memory Sequential Bandwidth ({sizeInMb} MB, {passes} passes)",
             ElapsedMilliseconds: elapsed.TotalMilliseconds,
-            OperationsPerSecond: (double)elementCount * passes / elapsed.TotalSeconds,
-            ThroughputGbPerSec: throughputGbSec
+            OperationsPerSecond: 0,
+            ThroughputGbPerSec: throughputGbSec,
+            MeasuredAtUtc: DateTimeOffset.UtcNow
         );
 
 

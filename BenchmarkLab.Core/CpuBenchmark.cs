@@ -35,9 +35,10 @@ public class CpuBenchmark
 
            return new BenchmarkResult(
             TestName: $"CPU Multi-Core SIMD ({threadCount} szál)",
-            ElapsedMilliseconds: elapsed.TotalMilliseconds,
-            OperationsPerSecond: opsPerSec,
-            ThroughputGbPerSec: 0
+    ElapsedMilliseconds: elapsed.TotalMilliseconds,
+    OperationsPerSecond: opsPerSec,
+    ThroughputGbPerSec: 0,
+    MeasuredAtUtc: DateTimeOffset.UtcNow
             
            );
         }
