@@ -16,11 +16,16 @@ public class BenchmarkTests
     [Fact]
     public void CpuBenchmark_ShouldRunAndReturnScore()
     {
-        // Teszt futtatása 10 millió iterációval
-        var result = CpuBenchmark.RunMultiThreadedTest(threadCount: 4, iterationsPerThread: 10_000_000);
+        var result = CpuBenchmark.RunMultiThreadedTest(
+        threadCount: 4,
+        iterationsPerThread: 100_000);
 
-        // Kiíratás a terminálra
-        _output.WriteLine($"[EREDMÉNY] Idő: {result.ElapsedMilliseconds:F2} ms | Pont: {result.OperationsPerSecond:F0}");
+    _output.WriteLine(
+        $"[EREDMÉNY] Idő: {result.ElapsedMilliseconds:F2} ms | " +
+        $"Művelet/sec: {result.OperationsPerSecond:F0}");
 
+    Assert.True(result.ElapsedMilliseconds > 0);
+    Assert.True(result.OperationsPerSecond > 0);
     }
-}
+    }
+

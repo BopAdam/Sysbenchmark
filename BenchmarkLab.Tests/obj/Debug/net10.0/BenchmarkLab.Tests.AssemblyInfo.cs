@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BenchmarkLab.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ce3eb75806f07c1df346236a89136564e840d678")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a78fa94ccefd910bf4e8818f1194231d9fbd2325")]
 [assembly: System.Reflection.AssemblyProductAttribute("BenchmarkLab.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BenchmarkLab.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
