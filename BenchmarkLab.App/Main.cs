@@ -39,7 +39,6 @@ Console.WriteLine("Adatbázis: MariaDB / sysbenchmark");
 
 Console.WriteLine(
     $"Gép: {device.MachineName} ({device.OperatingSystem})");
-Console.WriteLine($"Adatbázis: {connectionString}");
 
 
 var results = new List<BenchmarkResult>();

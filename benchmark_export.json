@@ -1,0 +1,48 @@
+{
+  "SchemaVersion": 1,
+  "ExportedAtUtc": "2026-09-26T17:54:55.2065526+00:00",
+  "Device": {
+    "MachineName": "DESKTOP-1DR7MO5",
+    "OperatingSystem": "Windows",
+    "CpuModel": "Ismeretlen CPU",
+    "TotalMemoryGb": 0
+  },
+  "Results": [
+    {
+      "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+      "ElapsedMilliseconds": 309.6745,
+      "OperationsPerSecond": 9300087672.701498,
+      "ThroughputGbPerSec": 0,
+      "MeasuredAtUtc": "2026-09-26T17:54:51.5124073+00:00",
+      "CpuTempBeforeC": null,
+      "CpuTempAfterC": null
+    },
+    {
+      "TestName": "Memory Sequential Bandwidth (256 MB, 10 passes)",
+      "ElapsedMilliseconds": 365.4369,
+      "OperationsPerSecond": 0,
+      "ThroughputGbPerSec": 6.84112633398543,
+      "MeasuredAtUtc": "2026-09-26T17:54:52.810468+00:00",
+      "CpuTempBeforeC": null,
+      "CpuTempAfterC": null
+    },
+    {
+      "TestName": "CPU Multi-Core SIMD (12 sz\u00E1l)",
+      "ElapsedMilliseconds": 312.7278,
+      "OperationsPerSecond": 9209286798.295515,
+      "ThroughputGbPerSec": 0,
+      "MeasuredAtUtc": "2026-09-26T17:54:54.0077581+00:00",
+      "CpuTempBeforeC": null,
+      "CpuTempAfterC": null
+    },
+    {
+      "TestName": "Memory Sequential Bandwidth (256 MB, 10 passes)",
+      "ElapsedMilliseconds": 365.2184,
+      "OperationsPerSecond": 0,
+      "ThroughputGbPerSec": 6.84521918939462,
+      "MeasuredAtUtc": "2026-09-26T17:54:54.588877+00:00",
+      "CpuTempBeforeC": null,
+      "CpuTempAfterC": null
+    }
+  ]
+}
