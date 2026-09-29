@@ -8,17 +8,38 @@ using BenchmarkLab.App;
 Console.Clear();
 Console.ForegroundColor = ConsoleColor.Cyan;
 Console.WriteLine("==================================================");
-Console.WriteLine("   SYSBENCH-CORE | LINUX TELJESÍTMÉNY ELEMZŐ     ");
+Console.WriteLine("   SYSBENCH-CORE | TELJESÍTMÉNY ELEMZŐ  ");
 Console.WriteLine("==================================================");
 Console.ResetColor();
 
-SystemMonitor monitor = new LinuxSystemMonitor();
+SystemMonitor monitor;
+
+if (OperatingSystem.IsWindows())
+{
+    monitor = new WindowsSystemMonitor();
+}
+else if (OperatingSystem.IsLinux())
+{
+    monitor = new LinuxSystemMonitor();
+}
+else
+{
+    throw new PlatformNotSupportedException(
+        "A program jelenleg Windowst és Linuxot támogat."
+    );
+}
 var sysInfo = monitor.GetSystemInfo();
 
 Console.WriteLine($"Processzor : {sysInfo.CpuModel}");
 Console.WriteLine($"Logikai szálak: {sysInfo.LogicalCores} db");
 Console.WriteLine($"Rendszermemória: {sysInfo.AvailableMemoryGb:F2} GB szabad / {sysInfo.TotalMemoryGb:F2} GB összesen");
 Console.WriteLine("--------------------------------------------------");
+
+if (args.Contains("--system-info"))
+{
+    Console.WriteLine("Rendszeradatok ellenőrzése kész.");
+    return;
+}
 
 var device = new DeviceInfo(
     MachineName: Environment.MachineName,
