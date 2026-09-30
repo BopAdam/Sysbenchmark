@@ -11,7 +11,23 @@ Console.WriteLine("==================================================");
 Console.WriteLine("   SYSBENCH-CORE | TELJESÍTMÉNY ELEMZŐ  ");
 Console.WriteLine("==================================================");
 Console.ResetColor();
+if (args.Contains("--sensors"))
+{
+    try
+    {
+        WindowsSensorDiagnostics.Print();
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(
+            $"Szenzorolvasási hiba: {ex.GetType().Name}: {ex.Message}"
+        );
 
+        Environment.ExitCode = 1;
+    }
+
+    return;
+}
 SystemMonitor monitor;
 
 if (OperatingSystem.IsWindows())
