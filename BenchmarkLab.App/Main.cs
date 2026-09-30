@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
-using BenchmarkLab.Core;
+﻿using BenchmarkLab.Core;
 using BenchmarkLab.Hardware;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using BenchmarkLab.App;
+using MySqlConnector;
 
 Console.Clear();
 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -66,14 +66,7 @@ var device = new DeviceInfo(
     CpuModel: sysInfo.CpuModel,
     TotalMemoryGb: sysInfo.TotalMemoryGb
 );
-string connectionString =
-    Environment.GetEnvironmentVariable("SYSBENCHMARK_DB")
-    ?? throw new InvalidOperationException(
-        "Hiányzik a SYSBENCHMARK_DB környezeti változó.");
-
-var store = new BenchmarkStore(connectionString);
-Console.WriteLine("Adatbázis: MariaDB / sysbenchmark");
-
+BenchmarkStore? store = CreateStore();
 Console.WriteLine(
     $"Gép: {device.MachineName} ({device.OperatingSystem})");
 
@@ -91,8 +84,7 @@ while (true)
     Console.Write("\nOpció: ");
 
     var key = Console.ReadLine();
-    if (key == "0") break;
-
+    if (key is null or "0") break;
     switch (key)
     {
        case "1":
@@ -119,7 +111,7 @@ case "4":
 
 static void RunCpuTest(
     List<BenchmarkResult> results,
-    BenchmarkStore store,
+    BenchmarkStore? store,
     DeviceInfo device)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
@@ -140,8 +132,8 @@ static void RunCpuTest(
         CpuTempAfterC = tempAfter
     };
 
-    store.Save(device, result);
     results.Add(result);
+TrySaveResult(store, device, result);
 
     DisplayResult(result);
 
@@ -154,7 +146,7 @@ static void RunCpuTest(
 
 static void RunMemoryTest(
     List<BenchmarkResult> results,
-    BenchmarkStore store,
+    BenchmarkStore? store,
     DeviceInfo device)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
@@ -166,8 +158,8 @@ static void RunMemoryTest(
         sizeInMb: 256,
         passes: 10);
 
-    store.Save(device, result);
     results.Add(result);
+TrySaveResult(store, device, result);
 
     DisplayResult(result);
 }
@@ -209,27 +201,113 @@ static void ExportResults(
     {
         Console.WriteLine(
             "Nincs még elmenthető mérési adat ebben a futásban!");
+
         return;
     }
 
-    string fileName = "benchmark_export.json";
+    try
+    {
+        string path = JsonExporter.Save(device, results);
 
-    var export = new BenchmarkExport(
-        SchemaVersion: 1,
-        ExportedAtUtc: DateTimeOffset.UtcNow,
-        Device: device,
-        Results: results
-    );
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine(
+            $"[SIKER] Eredmények elmentve: {path}");
+    }
+    catch (UnauthorizedAccessException)
+    {
+        Console.WriteLine(
+            "[EXPORT] Nincs jogosultság a fájl írásához. " +
+            "Az eredmények továbbra is a memóriában vannak.");
+    }
+    catch (IOException)
+    {
+        Console.WriteLine(
+            "[EXPORT] Fájlírási hiba történt. " +
+            "Ellenőrizd a szabad helyet és a fájl elérhetőségét. " +
+            "Az eredmények továbbra is a memóriában vannak.");
+    }
+    finally
+    {
+        Console.ResetColor();
+    }
+}
 
-    string json = JsonSerializer.Serialize(
-        export,
-        new JsonSerializerOptions { WriteIndented = true });
 
-    File.WriteAllText(fileName, json);
 
-    Console.ForegroundColor = ConsoleColor.Magenta;
+static BenchmarkStore? CreateStore()
+{
+    string? connectionString =
+        Environment.GetEnvironmentVariable("SYSBENCHMARK_DB");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        Console.WriteLine(
+            "[ADATBÁZIS] Nincs SYSBENCHMARK_DB beállítás.");
+
+        Console.WriteLine(
+            "A mérések futtathatók. Mentéshez használd a JSON-exportot.");
+
+        return null;
+    }
+
+    try
+    {
+        var store = new BenchmarkStore(connectionString);
+
+        Console.WriteLine(
+            "[ADATBÁZIS] MariaDB-kapcsolat létrejött.");
+
+        return store;
+    }
+    catch (MySqlException ex)
+    {
+        Console.WriteLine(
+            $"[ADATBÁZIS] Az inicializálás sikertelen. Hibakód: {ex.Number}");
+
+        Console.WriteLine(
+            "Ellenőrizd a szervert, a hálózatot és a belépési adatokat.");
+    }
+    catch (ArgumentException)
+    {
+        Console.WriteLine(
+            "[ADATBÁZIS] Hibás kapcsolati karakterlánc.");
+    }
+
     Console.WriteLine(
-        $"[SIKER] Eredmények elmentve: " +
-        $"{Path.GetFullPath(fileName)}");
-    Console.ResetColor();
+        "Ebben a futásban JSON-exporttal tudod menteni a méréseket.");
+
+    return null;
+}
+
+static void TrySaveResult(
+    BenchmarkStore? store,
+    DeviceInfo device,
+    BenchmarkResult result)
+{
+    if (store is null)
+    {
+        Console.WriteLine(
+            "[MENTÉS] A mérés csak a memóriában van. " +
+            "Kilépés előtt használd a 4-es JSON-exportot.");
+
+        return;
+    }
+
+    try
+    {
+        store.Save(device, result);
+
+        Console.WriteLine(
+            "[MENTÉS] Az eredmény bekerült az adatbázisba.");
+    }
+    catch (MySqlException ex)
+    {
+        Console.WriteLine(
+            $"[MENTÉS] Az adatbázis-mentés nem igazolható. " +
+            $"Hibakód: {ex.Number}");
+
+        Console.WriteLine(
+            "Az eredmény megmaradt a memóriában. " +
+            "Kilépés előtt használd a 4-es JSON-exportot.");
+    }
 }

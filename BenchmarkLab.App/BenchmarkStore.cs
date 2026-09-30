@@ -159,9 +159,19 @@ public sealed class BenchmarkStore
     }
 
     private MySqlConnection Open()
+{
+    var connection = new MySqlConnection(_connectionString);
+
+    try
     {
-        var connection = new MySqlConnection(_connectionString);
         connection.Open();
         return connection;
     }
+    catch
+    {
+        connection.Dispose();
+        throw;
+    }
 }
+
+    }
