@@ -1,0 +1,40 @@
+name: sysbenchmark
+
+services:
+  mariadb:
+    image: mariadb:11.8
+    restart: unless-stopped
+
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Hianyzik a root jelszo}
+      MARIADB_DATABASE: sysbenchmark
+      MARIADB_USER: sysbenchmark_app
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Hianyzik az alkalmazas jelszava}
+
+    ports:
+      - "127.0.0.1:3307:3306"
+
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
