@@ -13,6 +13,7 @@ services:
 
     ports:
       - "127.0.0.1:3307:3306"
+      - "192.168.0.151:3307:3306"
 
     volumes:
       - mariadb_data:/var/lib/mysql
