@@ -65,7 +65,13 @@ var device = new DeviceInfo(
             : "Linux",
     CpuModel: sysInfo.CpuModel,
     TotalMemoryGb: sysInfo.TotalMemoryGb
-);
+)
+{
+    DeviceUid = DeviceIdentity.LoadOrCreate()
+};
+
+Console.WriteLine($"Eszközazonosító: {device.DeviceUid}");
+    
 BenchmarkStore? store = CreateStore();
 Console.WriteLine(
     $"Gép: {device.MachineName} ({device.OperatingSystem})");
@@ -88,31 +94,48 @@ while (true)
     switch (key)
     {
        case "1":
-    RunCpuTest(results, store, device);
-    break;
+        BenchmarkRunner.Run(
+            "Cpu",
+            RunCpuTest,
+            results,
+            store,
+            device);
+        break;
 
-case "2":
-    RunMemoryTest(results, store, device);
-    break;
+    case "2":
+        BenchmarkRunner.Run(
+            "Memory",
+            RunMemoryTest,
+            results,
+            store,
+            device);
+        break;
 
-case "3":
-    RunCpuTest(results, store, device);
-    RunMemoryTest(results, store, device);
-    break;
+    case "3":
+        BenchmarkRunner.Run(
+            "FullSuite",
+            currentResults =>
+            {
+                RunCpuTest(currentResults);
+                RunMemoryTest(currentResults);
+            },
+            results,
+            store,
+            device);
+        break;
 
-case "4":
-    ExportResults(results, device);
-    break;
-        default:
-            Console.WriteLine("Érvénytelen választás!");
-            break;
+    case "4":
+        ExportResults(results, device);
+        break;
+
+    default:
+        Console.WriteLine("Érvénytelen választás!");
+        break;
     }
 }
 
 static void RunCpuTest(
-    List<BenchmarkResult> results,
-    BenchmarkStore? store,
-    DeviceInfo device)
+    List<BenchmarkResult> results)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine("\n[FUTTATÁS] CPU terhelés indítása...");
@@ -133,7 +156,6 @@ static void RunCpuTest(
     };
 
     results.Add(result);
-TrySaveResult(store, device, result);
 
     DisplayResult(result);
 
@@ -144,10 +166,7 @@ TrySaveResult(store, device, result);
         $"{tempAfter?.ToString("F1") ?? "nincs adat"} °C");
 }
 
-static void RunMemoryTest(
-    List<BenchmarkResult> results,
-    BenchmarkStore? store,
-    DeviceInfo device)
+static void RunMemoryTest(List<BenchmarkResult> results)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine(
@@ -159,7 +178,6 @@ static void RunMemoryTest(
         passes: 10);
 
     results.Add(result);
-TrySaveResult(store, device, result);
 
     DisplayResult(result);
 }
@@ -277,37 +295,4 @@ static BenchmarkStore? CreateStore()
         "Ebben a futásban JSON-exporttal tudod menteni a méréseket.");
 
     return null;
-}
-
-static void TrySaveResult(
-    BenchmarkStore? store,
-    DeviceInfo device,
-    BenchmarkResult result)
-{
-    if (store is null)
-    {
-        Console.WriteLine(
-            "[MENTÉS] A mérés csak a memóriában van. " +
-            "Kilépés előtt használd a 4-es JSON-exportot.");
-
-        return;
-    }
-
-    try
-    {
-        store.Save(device, result);
-
-        Console.WriteLine(
-            "[MENTÉS] Az eredmény bekerült az adatbázisba.");
-    }
-    catch (MySqlException ex)
-    {
-        Console.WriteLine(
-            $"[MENTÉS] Az adatbázis-mentés nem igazolható. " +
-            $"Hibakód: {ex.Number}");
-
-        Console.WriteLine(
-            "Az eredmény megmaradt a memóriában. " +
-            "Kilépés előtt használd a 4-es JSON-exportot.");
-    }
 }

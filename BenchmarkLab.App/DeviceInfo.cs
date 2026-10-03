@@ -7,7 +7,10 @@ public sealed record DeviceInfo(
     string OperatingSystem,
     string CpuModel,
     double TotalMemoryGb
-);
+)
+{
+    public Guid DeviceUid { get; init; }
+}
 
 public sealed record BenchmarkExport(
     int SchemaVersion,

@@ -10,4 +10,6 @@ public readonly record struct BenchmarkResult(
 {
     public double? CpuTempBeforeC { get; init; }
     public double? CpuTempAfterC { get; init; }
+
+    public Guid? RunId { get; init; }
 }
