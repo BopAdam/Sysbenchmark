@@ -3,3 +3,4 @@ bin/
 obj/
 .env
 sysbenc.txt
+/benchmark_export.json
