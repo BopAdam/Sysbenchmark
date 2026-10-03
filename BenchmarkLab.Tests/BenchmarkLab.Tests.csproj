@@ -19,7 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BenchmarkLab.Core\BenchmarkLab.Core.csproj" />
-  </ItemGroup>
+  <ProjectReference Include="..\BenchmarkLab.Core\BenchmarkLab.Core.csproj" />
+  <ProjectReference Include="..\BenchmarkLab.App\BenchmarkLab.App.csproj" />
+</ItemGroup>
 
 </Project>

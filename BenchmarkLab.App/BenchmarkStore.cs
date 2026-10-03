@@ -3,7 +3,7 @@ using MySqlConnector;
 
 namespace BenchmarkLab.App;
 
-public sealed class BenchmarkStore
+public sealed class BenchmarkStore : IBenchmarkStore
 {
     private readonly string _connectionString;
 
@@ -12,6 +12,34 @@ public sealed class BenchmarkStore
         _connectionString = connectionString;
 
         using var connection = Open();
+
+
+
+        using (var createMeasurements = connection.CreateCommand())
+{
+    createMeasurements.CommandText = """
+        CREATE TABLE IF NOT EXISTS Measurements (
+            Id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            DeviceId BIGINT NOT NULL,
+            TestName VARCHAR(255) NOT NULL,
+            MeasuredAtUtc DATETIME(6) NOT NULL,
+            ElapsedMilliseconds DOUBLE NOT NULL,
+            OperationsPerSecond DOUBLE NOT NULL,
+            ThroughputGbPerSec DOUBLE NOT NULL,
+            CpuTempBeforeC DOUBLE NULL,
+            CpuTempAfterC DOUBLE NULL,
+
+            CONSTRAINT FK_Measurements_Devices
+                FOREIGN KEY (DeviceId)
+                REFERENCES Devices(Id),
+
+            INDEX IX_Measurements_Device_Time
+                (DeviceId, MeasuredAtUtc)
+        ) ENGINE=InnoDB;
+        """;
+
+    createMeasurements.ExecuteNonQuery();
+}
 
         using (var devices = connection.CreateCommand())
         {

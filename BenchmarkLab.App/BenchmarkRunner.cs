@@ -1,17 +1,21 @@
+using System.Data.Common;
 using BenchmarkLab.Core;
-using MySqlConnector;
 
 namespace BenchmarkLab.App;
 
 public static class BenchmarkRunner
 {
-    public static void Run(
+    public static BenchmarkRun Run(
         string runType,
         Action<List<BenchmarkResult>> execute,
         List<BenchmarkResult> allResults,
-        BenchmarkStore? store,
+        IBenchmarkStore? store,
         DeviceInfo device)
     {
+        ArgumentNullException.ThrowIfNull(execute);
+        ArgumentNullException.ThrowIfNull(allResults);
+        ArgumentNullException.ThrowIfNull(device);
+
         Guid runId = Guid.NewGuid();
         DateTimeOffset started = DateTimeOffset.UtcNow;
 
@@ -24,8 +28,8 @@ public static class BenchmarkRunner
         }
         catch (Exception ex)
         {
-            // A menüből indított mérési művelet határán kezeljük a hibát.
-            // Az addig elkészült eredményeket továbbra is megtartjuk.
+            // A mérési művelet határán megtartjuk
+            // az addig elkészült eredményeket.
             status = "Failed";
 
             Console.WriteLine(
@@ -40,8 +44,7 @@ public static class BenchmarkRunner
             Status: status,
             AppVersion:
                 typeof(BenchmarkRunner).Assembly.GetName()
-                    .Version?.ToString() ?? "unknown"
-        );
+                    .Version?.ToString() ?? "unknown");
 
         for (int index = 0; index < currentResults.Count; index++)
         {
@@ -51,7 +54,6 @@ public static class BenchmarkRunner
             };
         }
 
-        // Az adatbázis elérése előtt megőrizzük a méréseket.
         allResults.AddRange(currentResults);
 
         Console.WriteLine(
@@ -62,9 +64,9 @@ public static class BenchmarkRunner
         {
             Console.WriteLine(
                 "[MENTÉS] Nincs adatbázis-kapcsolat. " +
-                "Az elkészült mérések mentéséhez használd a 4-es exportot.");
+                "Az elkészült mérésekhez használd a 4-es exportot.");
 
-            return;
+            return run;
         }
 
         try
@@ -74,15 +76,16 @@ public static class BenchmarkRunner
             Console.WriteLine(
                 "[MENTÉS] A futtatás és az eredményei adatbázisba mentve.");
         }
-        catch (MySqlException ex)
+        catch (DbException)
         {
             Console.WriteLine(
-                $"[MENTÉS] Az adatbázis-mentés nem igazolható. " +
-                $"Hibakód: {ex.Number}");
+                "[MENTÉS] Az adatbázis-mentés nem igazolható.");
 
             Console.WriteLine(
                 "Az elkészült mérések a memóriában vannak. " +
                 "Kilépés előtt használd a 4-es exportot.");
         }
+
+        return run;
     }
 }

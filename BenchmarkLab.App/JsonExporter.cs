@@ -19,7 +19,7 @@ public static class JsonExporter
         Directory.CreateDirectory(directory);
 
         var export = new BenchmarkExport(
-            SchemaVersion: 1,
+            SchemaVersion: 2,
             ExportedAtUtc: DateTimeOffset.UtcNow,
             Device: device,
             Results: results

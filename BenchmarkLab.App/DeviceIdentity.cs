@@ -2,12 +2,12 @@ namespace BenchmarkLab.App;
 
 public static class DeviceIdentity
 {
-    public static Guid LoadOrCreate()
+    public static Guid LoadOrCreate(string? directory = null)
     {
-        string directory = Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData),
-            "Sysbenchmark");
+          directory ??= Path.Combine(
+        Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData),
+        "Sysbenchmark");
 
         Directory.CreateDirectory(directory);
 
