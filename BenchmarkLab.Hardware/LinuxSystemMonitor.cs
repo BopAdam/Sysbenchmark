@@ -59,7 +59,8 @@ public class LinuxSystemMonitor : SystemMonitor
         long totalDelta = currentTimes.total - _lastCpuTimes.total;
         _lastCpuTimes = currentTimes;
 
-        if (totalDelta == 0) return 0.0;
+        if (totalDelta <=0 || idleDelta < 0) 
+            return 0.0;
 
         double usage = (1.0 - ((double)idleDelta / totalDelta)) * 100.0;
         return Math.Clamp(usage, 0.0, 100.0);
@@ -67,24 +68,58 @@ public class LinuxSystemMonitor : SystemMonitor
 
     private (long idle, long total) ReadCpuTimes()
     {
-        if (!File.Exists("/proc/stat")) return (0, 0);
+       string? line = File.ReadLines("/proc/stat").FirstOrDefault();
 
-        string? firstLine = File.ReadLines("/proc/stat").FirstOrDefault();
-        if (string.IsNullOrEmpty(firstLine) || !firstLine.StartsWith("cpu ")) return (0, 0);
+    if (line is null || !line.StartsWith("cpu "))
+    {
+        throw new IOException(
+            "Nem olvasható a CPU összesített terhelési számlálója.");
+    }
 
-        var parts = firstLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        // mezők: cpu, user, nice, system, idle, iowait, irq, softirq, steal
-        long user = long.Parse(parts[1]);
-        long nice = long.Parse(parts[2]);
-        long system = long.Parse(parts[3]);
-        long idle = long.Parse(parts[4]);
-        long iowait = parts.Length > 5 ? long.Parse(parts[5]) : 0;
+    string[] parts = line.Split(
+        ' ',
+        StringSplitOptions.RemoveEmptyEntries);
 
-        long totalIdle = idle + iowait;
-        long totalNonIdle = user + nice + system;
-        long total = totalIdle + totalNonIdle;
+    if (parts.Length < 5)
+    {
+        throw new IOException(
+            "Hiányos CPU-adatok érkeztek a /proc/stat fájlból.");
+    }
 
-        return (totalIdle, total);
+    long ReadCounter(int index)
+    {
+        if (index >= parts.Length)
+            return 0;
+
+        if (!long.TryParse(
+                parts[index],
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out long value) ||
+            value < 0)
+        {
+            throw new IOException(
+                "Érvénytelen CPU-számláló a /proc/stat fájlban.");
+        }
+
+        return value;
+    }
+
+    long user = ReadCounter(1);
+    long nice = ReadCounter(2);
+    long system = ReadCounter(3);
+    long idle = ReadCounter(4);
+    long ioWait = ReadCounter(5);
+    long irq = ReadCounter(6);
+    long softIrq = ReadCounter(7);
+    long steal = ReadCounter(8);
+
+    long totalIdle = checked(idle + ioWait);
+
+    long total = checked(
+        user + nice + system + totalIdle + irq + softIrq + steal);
+
+    return (totalIdle, total);
     }
 
     private static double ParseKbToGb(string memInfoLine)

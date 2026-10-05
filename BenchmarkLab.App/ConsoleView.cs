@@ -34,13 +34,14 @@ public static class ConsoleView
     }
 
     public static void ShowMenu()
-    {
+    {   Console.WriteLine("0. Kilépés");
         Console.WriteLine();
         Console.WriteLine("Válassz egy menüpontot:");
         Console.WriteLine("1. [Teszt] CPU-teljesítmény (Többszálas SIMD)");
         Console.WriteLine("2. [Teszt] Memória-sávszélesség (Szekvenciális olvasás)");
         Console.WriteLine("3. [Összes] Teljes tesztcsomag futtatása");
         Console.WriteLine("4. [Export] Eredmények mentése JSON-fájlba");
+        Console.WriteLine("5. [Monitor] Folyamatos rendszerfigyelés");
         Console.WriteLine("0. Kilépés");
         Console.Write("\nOpció: ");
     }

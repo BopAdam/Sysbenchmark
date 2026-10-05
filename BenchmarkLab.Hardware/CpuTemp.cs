@@ -1,11 +1,57 @@
+using System.Globalization;
 using LibreHardwareMonitor.Hardware;
 
 namespace BenchmarkLab.Hardware;
 
+// A meglévő benchmarkok továbbra is ezt használhatják.
 public static class CpuTemperatureReader
 {
     public static double? ReadCelsius()
     {
+        using var session = new CpuTemperatureSession();
+        return session.ReadCelsius();
+    }
+}
+
+// Monitorozásnál egyetlen példány él az indítástól a leállításig.
+public sealed class CpuTemperatureSession : IDisposable
+{
+    private Computer? _computer;
+    private bool _disposed;
+
+    public CpuTemperatureSession()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        _computer = new Computer
+        {
+            IsCpuEnabled = true
+        };
+
+        try
+        {
+            _computer.Open();
+        }
+        catch
+        {
+            try
+            {
+                _computer.Close();
+            }
+            finally
+            {
+                _computer = null;
+            }
+
+            throw;
+        }
+    }
+
+    public double? ReadCelsius()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (OperatingSystem.IsWindows())
             return ReadWindows();
 
@@ -15,14 +61,14 @@ public static class CpuTemperatureReader
         return null;
     }
 
-    private static double? ReadWindows()
+    private double? ReadWindows()
     {
-       var computer = new Computer { IsCpuEnabled = true };
-    computer.Open();
+        if (_computer is null)
+            return null;
 
-    try
-    {
-        foreach (IHardware hardware in computer.Hardware)
+        double? highestTemperature = null;
+
+        foreach (IHardware hardware in _computer.Hardware)
         {
             if (hardware.HardwareType != HardwareType.Cpu)
                 continue;
@@ -31,70 +77,129 @@ public static class CpuTemperatureReader
 
             foreach (ISensor sensor in hardware.Sensors)
             {
-                if (sensor.SensorType == SensorType.Temperature &&
-                    sensor.Value.HasValue &&
-                    (sensor.Name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
-                     sensor.Name.Contains("Tctl", StringComparison.OrdinalIgnoreCase) ||
-                     sensor.Name.Contains("Tdie", StringComparison.OrdinalIgnoreCase)))
+                if (sensor.SensorType != SensorType.Temperature ||
+                    !sensor.Value.HasValue ||
+                    !IsCpuTemperatureLabel(sensor.Name))
                 {
-                    return sensor.Value.Value;
+                    continue;
                 }
+
+                double value = sensor.Value.Value;
+
+                if (!double.IsFinite(value))
+                    continue;
+
+                highestTemperature = highestTemperature.HasValue
+                    ? Math.Max(highestTemperature.Value, value)
+                    : value;
             }
         }
 
-        return null;
-    }
-    finally
-    {
-        computer.Close();
-    }
+        return highestTemperature;
     }
 
     private static double? ReadLinux()
     {
-        const string hwmonRoot = "/sys/class/hwmon";
+        const string root = "/sys/class/hwmon";
 
-        if (!Directory.Exists(hwmonRoot))
-            return null;
-
-        foreach (string deviceDirectory in Directory.GetDirectories(hwmonRoot, "hwmon*"))
+        try
         {
-            foreach (string inputFile in Directory.GetFiles(deviceDirectory, "temp*_input"))
+            if (!Directory.Exists(root))
+                return null;
+
+            double? highestTemperature = null;
+
+            foreach (string directory in
+                     Directory.GetDirectories(root, "hwmon*"))
             {
-                string labelFile = inputFile.Replace("_input", "_label");
-
-                if (!File.Exists(labelFile))
-                    continue;
-
                 try
                 {
-                    string label = File.ReadAllText(labelFile).Trim();
-
-                    if (!label.Contains("Package", StringComparison.OrdinalIgnoreCase) &&
-                        !label.Contains("Tctl", StringComparison.OrdinalIgnoreCase) &&
-                        !label.Contains("Tdie", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    if (double.TryParse(
-                            File.ReadAllText(inputFile).Trim(),
-                            System.Globalization.NumberStyles.Float,
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            out double millidegrees))
+                    foreach (string inputFile in
+                             Directory.GetFiles(directory, "temp*_input"))
                     {
-                        return millidegrees / 1000.0;
+                        double? value = ReadLinuxSensor(inputFile);
+
+                        if (!value.HasValue)
+                            continue;
+
+                        highestTemperature = highestTemperature.HasValue
+                            ? Math.Max(highestTemperature.Value, value.Value)
+                            : value;
                     }
                 }
                 catch (IOException)
                 {
-                    // A szenzor időközben eltűnhetett; megnézzük a következőt.
+                    // Az eszköz időközben eltűnhetett.
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    // Ehhez a szenzorhoz nincs hozzáférés.
+                    // Másik olvasható szenzort keresünk.
                 }
             }
-        }
 
-        return null;
+            return highestTemperature;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static double? ReadLinuxSensor(string inputFile)
+    {
+        string labelFile = inputFile.Replace("_input", "_label");
+
+        try
+        {
+            if (!File.Exists(labelFile))
+                return null;
+
+            string label = File.ReadAllText(labelFile).Trim();
+
+            if (!IsCpuTemperatureLabel(label))
+                return null;
+
+            bool parsed = double.TryParse(
+                File.ReadAllText(inputFile).Trim(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out double millidegrees);
+
+            return parsed && double.IsFinite(millidegrees)
+                ? millidegrees / 1000.0
+                : null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsCpuTemperatureLabel(string name)
+    {
+        return name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+               name.Contains("Tctl", StringComparison.OrdinalIgnoreCase) ||
+               name.Contains("Tdie", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+
+        Computer? computer = _computer;
+        _computer = null;
+
+        computer?.Close();
     }
 }

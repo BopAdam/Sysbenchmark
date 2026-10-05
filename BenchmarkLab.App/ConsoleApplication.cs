@@ -52,6 +52,10 @@ public sealed class ConsoleApplication
                     ExportResults();
                     break;
 
+                case "5":
+    MonitoringConsole.Run(_device);
+                    break;
+                    
                 default:
                     Console.WriteLine("Érvénytelen választás!");
                     break;
