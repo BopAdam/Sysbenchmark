@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using BenchmarkLab.Hardware;
+using MySqlConnector;
 
 namespace BenchmarkLab.App;
 
@@ -29,7 +30,7 @@ public static class MonitoringConsole
         catch (Exception ex)
         {
             // A konzolos funkció hibahatára:
-            // a hiba után visszatérünk a főmenübe.
+            // hiba után visszatérünk a főmenübe.
             Console.WriteLine(
                 $"[MONITOR] A monitorozás hibával leállt: " +
                 $"{ex.GetType().Name}: {ex.Message}");
@@ -43,6 +44,7 @@ public static class MonitoringConsole
     private static void RunSession(DeviceInfo device)
     {
         Guid sessionId = Guid.NewGuid();
+        DateTimeOffset startedAtUtc = DateTimeOffset.UtcNow;
 
         string directory = Path.Combine(
             Directory.GetCurrentDirectory(),
@@ -52,7 +54,7 @@ public static class MonitoringConsole
 
         string path = Path.Combine(
             directory,
-            $"monitoring_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_" +
+            $"monitoring_{startedAtUtc:yyyyMMdd_HHmmss}_" +
             $"{sessionId:N}.jsonl");
 
         using var file = new FileStream(
@@ -73,7 +75,7 @@ public static class MonitoringConsole
             Type = "SessionStarted",
             SchemaVersion = 1,
             SessionId = sessionId,
-            StartedAtUtc = DateTimeOffset.UtcNow,
+            StartedAtUtc = startedAtUtc,
             SampleIntervalMilliseconds = SampleInterval.TotalMilliseconds,
             Device = device
         });
@@ -89,6 +91,9 @@ public static class MonitoringConsole
         string status = "Stopped";
         string? errorType = null;
 
+        MonitoringStore? monitoringStore = null;
+        bool databaseSaveFailed = false;
+
         ConsoleCancelEventHandler cancelHandler = (_, eventArgs) =>
         {
             eventArgs.Cancel = true;
@@ -99,11 +104,16 @@ public static class MonitoringConsole
 
         try
         {
+            monitoringStore = TryStartDatabase(
+                device,
+                sessionId,
+                startedAtUtc);
+
             using var temperatureReader = new CpuTemperatureSession();
 
             SystemMonitor monitor = AppStartup.CreateMonitor();
 
-            // Az első kijelzett CPU-érték már két mintavétel különbsége.
+            // Beállítjuk a CPU-kihasználtság kezdő számlálóit.
             monitor.GetCpuUsagePercentage();
 
             var clock = Stopwatch.StartNew();
@@ -136,7 +146,7 @@ public static class MonitoringConsole
                         info.TotalMemoryGb - info.AvailableMemoryGb),
                     CpuTemperatureC: temperature);
 
-                // Előbb mentünk, utána jelezzük a mintát a konzolon.
+                // Először mindig a helyi naplóba írunk.
                 WriteRecord(writer, new
                 {
                     Type = "Sample",
@@ -144,10 +154,31 @@ public static class MonitoringConsole
                 });
 
                 sampleCount = sample.Sequence;
+
+                // Csak sikeres helyi mentés után írunk az adatbázisba.
+                if (monitoringStore is not null && !databaseSaveFailed)
+                {
+                    try
+                    {
+                        monitoringStore.SaveSample(sample);
+                    }
+                    catch (MySqlException ex)
+                    {
+                        databaseSaveFailed = true;
+
+                        Console.WriteLine(
+                            $"[MONITOR DB] A mentés nem igazolható. " +
+                            $"Hibakód: {ex.Number}");
+
+                        Console.WriteLine(
+                            "[MONITOR DB] Ebben a munkamenetben " +
+                            "a további minták csak JSONL-be kerülnek.");
+                    }
+                }
+
                 ShowSample(sample);
 
-                // Lassabb szenzorolvasás után sem indítunk
-                // egymásra torlódó, párhuzamos mintavételeket.
+                // Nincs párhuzamos vagy felhalmozódó mintavétel.
                 nextSampleAt = clock.Elapsed + SampleInterval;
             }
         }
@@ -159,31 +190,165 @@ public static class MonitoringConsole
         }
         finally
         {
-            Console.CancelKeyPress -= cancelHandler;
+            DateTimeOffset finishedAtUtc = DateTimeOffset.UtcNow;
 
             try
             {
-                WriteRecord(writer, new
-                {
-                    Type = "SessionFinished",
-                    SessionId = sessionId,
-                    FinishedAtUtc = DateTimeOffset.UtcNow,
-                    Status = status,
-                    SampleCount = sampleCount,
-                    ErrorType = errorType
-                });
+                WriteSessionFinished(
+                    writer,
+                    sessionId,
+                    finishedAtUtc,
+                    status,
+                    sampleCount,
+                    errorType);
+
+                FinishDatabase(
+                    monitoringStore,
+                    sessionId,
+                    finishedAtUtc,
+                    status,
+                    sampleCount,
+                    databaseSaveFailed);
             }
-            catch (IOException)
+            finally
             {
-                Console.WriteLine(
-                    "[MONITOR] A lezáró naplóbejegyzés írása sikertelen.");
+                // Újraindításkor nem marad fent korábbi eseménykezelő.
+                Console.CancelKeyPress -= cancelHandler;
             }
         }
 
         Console.WriteLine(
-            $"[MONITOR] Leállítva. Elmentett minták: {sampleCount}");
+            $"[MONITOR] Leállítva. JSONL-be mentett minták: {sampleCount}");
 
         Console.WriteLine($"[MONITOR] Fájl: {path}");
+    }
+
+    private static MonitoringStore? TryStartDatabase(
+        DeviceInfo device,
+        Guid sessionId,
+        DateTimeOffset startedAtUtc)
+    {
+        string? connectionString =
+            Environment.GetEnvironmentVariable("SYSBENCHMARK_DB");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.WriteLine(
+                "[MONITOR DB] Nincs adatbázis-beállítás. " +
+                "Automatikus mentés JSONL-be.");
+
+            return null;
+        }
+
+        try
+        {
+            var store = new MonitoringStore(connectionString);
+
+            store.Start(
+                device,
+                sessionId,
+                startedAtUtc,
+                checked((int)SampleInterval.TotalMilliseconds));
+
+            Console.WriteLine(
+                "[MONITOR DB] A munkamenet létrejött. " +
+                "Mentés JSONL-be és MariaDB-be.");
+
+            return store;
+        }
+        catch (MySqlException ex)
+        {
+            Console.WriteLine(
+                $"[MONITOR DB] Az inicializálás nem igazolható. " +
+                $"Hibakód: {ex.Number}");
+        }
+        catch (ArgumentException)
+        {
+            Console.WriteLine(
+                "[MONITOR DB] Hibás adatbázis-beállítás " +
+                "vagy munkamenetadat.");
+        }
+
+        Console.WriteLine(
+            "[MONITOR DB] Ez a munkamenet csak JSONL-be ment.");
+
+        return null;
+    }
+
+    private static void WriteSessionFinished(
+        StreamWriter writer,
+        Guid sessionId,
+        DateTimeOffset finishedAtUtc,
+        string status,
+        long sampleCount,
+        string? errorType)
+    {
+        try
+        {
+            WriteRecord(writer, new
+            {
+                Type = "SessionFinished",
+                SessionId = sessionId,
+                FinishedAtUtc = finishedAtUtc,
+                Status = status,
+                SampleCount = sampleCount,
+                ErrorType = errorType
+            });
+        }
+        catch (IOException)
+        {
+            Console.WriteLine(
+                "[MONITOR] A lezáró naplóbejegyzés írása sikertelen.");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.WriteLine(
+                "[MONITOR] Nincs jogosultság a lezáró bejegyzés írásához.");
+        }
+    }
+
+    private static void FinishDatabase(
+        MonitoringStore? store,
+        Guid sessionId,
+        DateTimeOffset finishedAtUtc,
+        string status,
+        long sampleCount,
+        bool databaseSaveFailed)
+    {
+        if (store is null)
+            return;
+
+        try
+        {
+            store.Finish(
+                sessionId,
+                finishedAtUtc,
+                status,
+                sampleCount,
+                databaseComplete: !databaseSaveFailed);
+
+            Console.WriteLine(
+                databaseSaveFailed
+                    ? "[MONITOR DB] Lezárva, hiányos adatbázisos mentéssel."
+                    : "[MONITOR DB] Lezárva, minden minta mentése igazolt.");
+        }
+        catch (MySqlException ex)
+        {
+            Console.WriteLine(
+                $"[MONITOR DB] A lezárás mentése nem igazolható. " +
+                $"Hibakód: {ex.Number}");
+
+            Console.WriteLine(
+                "[MONITOR DB] Az adatbázisban Running állapot " +
+                "maradhat; a helyi napló tartalmazza a lezárást, " +
+                "ha annak kiírása sikerült.");
+        }
+        catch (InvalidOperationException)
+        {
+            Console.WriteLine(
+                "[MONITOR DB] A munkamenet nem található " +
+                "vagy már lezárult.");
+        }
     }
 
     private static bool StopKeyPressed()
