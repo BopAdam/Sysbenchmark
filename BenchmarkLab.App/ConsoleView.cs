@@ -42,6 +42,7 @@ public static class ConsoleView
         Console.WriteLine("3. [Összes] Teljes tesztcsomag futtatása");
         Console.WriteLine("4. [Export] Eredmények mentése JSON-fájlba");
         Console.WriteLine("5. [Monitor] Folyamatos rendszerfigyelés");
+        Console.WriteLine("6. [Import] Monitorozási JSONL visszatöltése");
         Console.WriteLine("0. Kilépés");
         Console.Write("\nOpció: ");
     }

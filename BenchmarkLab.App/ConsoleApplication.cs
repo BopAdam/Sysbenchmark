@@ -56,6 +56,10 @@ public sealed class ConsoleApplication
     MonitoringConsole.Run(_device);
                     break;
                     
+                case "6":
+                    MonitoringImportConsole.Run();
+                    break;
+
                 default:
                     Console.WriteLine("Érvénytelen választás!");
                     break;
