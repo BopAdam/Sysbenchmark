@@ -1,9 +1,8 @@
 using System.Globalization;
-using LibreHardwareMonitor.Hardware;
+using System.Runtime.CompilerServices;
 
 namespace BenchmarkLab.Hardware;
 
-// A meglévő benchmarkok továbbra is ezt használhatják.
 public static class CpuTemperatureReader
 {
     public static double? ReadCelsius()
@@ -13,92 +12,69 @@ public static class CpuTemperatureReader
     }
 }
 
-// Monitorozásnál egyetlen példány él az indítástól a leállításig.
+internal interface ICpuTemperatureBackend : IDisposable
+{
+    double? ReadCelsius();
+}
+
 public sealed class CpuTemperatureSession : IDisposable
 {
-    private Computer? _computer;
+    private readonly ICpuTemperatureBackend? _backend;
     private bool _disposed;
 
     public CpuTemperatureSession()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
-        _computer = new Computer
+        if (OperatingSystem.IsWindows())
         {
-            IsCpuEnabled = true
-        };
-
-        try
-        {
-            _computer.Open();
+            _backend = CreateWindowsBackend();
         }
-        catch
+        else if (OperatingSystem.IsLinux())
         {
-            try
-            {
-                _computer.Close();
-            }
-            finally
-            {
-                _computer = null;
-            }
-
-            throw;
+            _backend = new LinuxCpuTemperatureBackend();
         }
+    }
+
+    // A Windowsos típus létrehozása külön metódusban marad.
+    // Linuxon ezt a metódust nem hívjuk meg.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ICpuTemperatureBackend CreateWindowsBackend()
+    {
+        return new WindowsCpuTemperatureBackend();
     }
 
     public double? ReadCelsius()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        if (OperatingSystem.IsWindows())
-            return ReadWindows();
-
-        if (OperatingSystem.IsLinux())
-            return ReadLinux();
-
-        return null;
+        return _backend?.ReadCelsius();
     }
 
-    private double? ReadWindows()
+    public void Dispose()
     {
-        if (_computer is null)
-            return null;
+        if (_disposed)
+            return;
 
-        double? highestTemperature = null;
-
-        foreach (IHardware hardware in _computer.Hardware)
-        {
-            if (hardware.HardwareType != HardwareType.Cpu)
-                continue;
-
-            hardware.Update();
-
-            foreach (ISensor sensor in hardware.Sensors)
-            {
-                if (sensor.SensorType != SensorType.Temperature ||
-                    !sensor.Value.HasValue ||
-                    !IsCpuTemperatureLabel(sensor.Name))
-                {
-                    continue;
-                }
-
-                double value = sensor.Value.Value;
-
-                if (!double.IsFinite(value))
-                    continue;
-
-                highestTemperature = highestTemperature.HasValue
-                    ? Math.Max(highestTemperature.Value, value)
-                    : value;
-            }
-        }
-
-        return highestTemperature;
+        _disposed = true;
+        _backend?.Dispose();
     }
+}
 
-    private static double? ReadLinux()
+internal static class CpuTemperatureLabels
+{
+    public static bool IsCpuTemperature(string name)
+    {
+        return name.Contains(
+                   "Package", StringComparison.OrdinalIgnoreCase)
+               || name.Contains(
+                   "Tctl", StringComparison.OrdinalIgnoreCase)
+               || name.Contains(
+                   "Tdie", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+internal sealed class LinuxCpuTemperatureBackend
+    : ICpuTemperatureBackend
+{
+    public double? ReadCelsius()
     {
         const string root = "/sys/class/hwmon";
 
@@ -117,13 +93,15 @@ public sealed class CpuTemperatureSession : IDisposable
                     foreach (string inputFile in
                              Directory.GetFiles(directory, "temp*_input"))
                     {
-                        double? value = ReadLinuxSensor(inputFile);
+                        double? value = ReadSensor(inputFile);
 
                         if (!value.HasValue)
                             continue;
 
                         highestTemperature = highestTemperature.HasValue
-                            ? Math.Max(highestTemperature.Value, value.Value)
+                            ? Math.Max(
+                                highestTemperature.Value,
+                                value.Value)
                             : value;
                     }
                 }
@@ -133,7 +111,7 @@ public sealed class CpuTemperatureSession : IDisposable
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    // Másik olvasható szenzort keresünk.
+                    // Tovább keresünk olvasható szenzort.
                 }
             }
 
@@ -149,7 +127,7 @@ public sealed class CpuTemperatureSession : IDisposable
         }
     }
 
-    private static double? ReadLinuxSensor(string inputFile)
+    private static double? ReadSensor(string inputFile)
     {
         string labelFile = inputFile.Replace("_input", "_label");
 
@@ -160,7 +138,7 @@ public sealed class CpuTemperatureSession : IDisposable
 
             string label = File.ReadAllText(labelFile).Trim();
 
-            if (!IsCpuTemperatureLabel(label))
+            if (!CpuTemperatureLabels.IsCpuTemperature(label))
                 return null;
 
             bool parsed = double.TryParse(
@@ -183,23 +161,9 @@ public sealed class CpuTemperatureSession : IDisposable
         }
     }
 
-    private static bool IsCpuTemperatureLabel(string name)
-    {
-        return name.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
-               name.Contains("Tctl", StringComparison.OrdinalIgnoreCase) ||
-               name.Contains("Tdie", StringComparison.OrdinalIgnoreCase);
-    }
-
     public void Dispose()
     {
-        if (_disposed)
-            return;
-
-        _disposed = true;
-
-        Computer? computer = _computer;
-        _computer = null;
-
-        computer?.Close();
+        // A fájlolvasások maguk lezárják a fájlokat.
+        // Nem tartunk nyitva erőforrást a minták között.
     }
 }
