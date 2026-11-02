@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #101722;
+  color: #edf2f7;
+  font: 16px/1.5 system-ui, sans-serif;
+}
+
+main {
+  max-width: 48rem;
+  margin: auto;
+  padding: 3rem 2rem;
+}
+
+label { display: block; margin-bottom: .4rem; }
+select, button { padding: .6rem .85rem; font: inherit; }
+section { margin-top: 1.5rem; padding: 1rem 1.5rem; background: #1c2939; }
